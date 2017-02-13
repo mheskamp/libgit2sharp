@@ -33,7 +33,7 @@ namespace LibGit2Sharp.Core
         /// </summary>
         public static GitOid Empty
         {
-            get { return new GitOid(); }
+            get { return new GitOid { Id = new byte[Size] }; }
         }
     }
 }

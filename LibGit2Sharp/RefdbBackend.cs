@@ -38,7 +38,7 @@ namespace LibGit2Sharp
         /// Queries the backend for the given reference
         /// </summary>
         /// <param name="referenceName">Name of the reference to query</param>
-        /// <param name="isSymbolic"> True if the returned reference is a symbolic reference, 
+        /// <param name="isSymbolic"> True if the returned reference is a symbolic reference,
         /// False if the returned reference is a direct reference. </param>
         /// <param name="oid">Object ID of the returned reference. Valued when <paramref name="isSymbolic"/> is false.</param>
         /// <param name="symbolic">Target of the returned reference. Valued when <paramref name="isSymbolic"/> is false</param>
@@ -69,7 +69,7 @@ namespace LibGit2Sharp
         public abstract void WriteSymbolicReference(string referenceCanonicalName, string targetCanonicalName, bool force);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="referenceName"></param>
         /// <param name="newReferenceName"></param>
@@ -97,44 +97,44 @@ namespace LibGit2Sharp
         public abstract void Free();
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="refName"></param>
         /// <returns></returns>
         public abstract bool HasReflog(string refName);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="refName"></param>
         public abstract void EnsureReflog(string refName);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public abstract void ReadReflog();
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public abstract void WriteReflog();
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="oldName"></param>
         /// <param name="newName"></param>
         public abstract void RenameReflog(string oldName, string newName);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="refName"></param>
         /// <returns></returns>
         public abstract void LockReference(string refName);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="refname"></param>
         /// <returns></returns>
@@ -187,6 +187,7 @@ namespace LibGit2Sharp
             // we were to bind to the methods directly, that's the same as newing up a fresh delegate every time.
             // Those delegates won't be rooted in the object graph and can be collected as soon as StructureToPtr finishes.
             public static readonly GitRefDbBackend.exists_callback ExistsCallback = Exists;
+
             public static readonly GitRefDbBackend.lookup_callback LookupCallback = Lookup;
 
             public static readonly GitRefDbBackend.iterator_callback IterCallback = GetIterator;
@@ -355,10 +356,9 @@ namespace LibGit2Sharp
                     string name = Proxy.git_reference_name(referenceHandle);
                     GitReferenceType type = Proxy.git_reference_type(referenceHandle);
 
-                    // TODO: Marshal this correctly
                     if (oidPtr != IntPtr.Zero)
                     {
-                        GitOid oid = new GitOid();
+                        GitOid oid = GitOid.Empty;
                         Marshal.Copy(oidPtr, oid.Id, 0, 20);
                     }
 
