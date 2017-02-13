@@ -628,6 +628,15 @@ namespace LibGit2Sharp.Core
 
         #endregion
 
+        #region git_cred_
+
+        public static void git_cred_free(IntPtr cred)
+        {
+            NativeMethods.git_cred_free(cred);
+        }
+
+        #endregion
+
         #region git_describe_
 
         public static string git_describe_commit(
@@ -1101,11 +1110,19 @@ namespace LibGit2Sharp.Core
 
         #region git_merge_
 
-        public static IndexSafeHandle git_merge_commits(RepositorySafeHandle repo, GitObjectSafeHandle ourCommit, GitObjectSafeHandle theirCommit, GitMergeOpts opts)
+        public static IndexSafeHandle git_merge_commits(RepositorySafeHandle repo, GitObjectSafeHandle ourCommit, GitObjectSafeHandle theirCommit, GitMergeOpts opts, out bool earlyStop)
         {
             IndexSafeHandle index;
             int res = NativeMethods.git_merge_commits(out index, repo, ourCommit, theirCommit, ref opts);
-            Ensure.ZeroResult(res);
+            if (res == (int)GitErrorCode.MergeConflict)
+            {
+                earlyStop = true;
+            }
+            else
+            {
+                earlyStop = false;
+                Ensure.ZeroResult(res);
+            }
 
             return index;
         }
@@ -1189,7 +1206,7 @@ namespace LibGit2Sharp.Core
             return NativeMethods.git_annotated_commit_id(mergeHead).MarshalAsObjectId();
         }
 
-        public static void git_merge(RepositorySafeHandle repo, GitAnnotatedCommitHandle[] heads, GitMergeOpts mergeOptions, GitCheckoutOpts checkoutOptions)
+        public static void git_merge(RepositorySafeHandle repo, GitAnnotatedCommitHandle[] heads, GitMergeOpts mergeOptions, GitCheckoutOpts checkoutOptions, out bool earlyStop)
         {
             IntPtr[] their_heads = heads.Select(head => head.DangerousGetHandle()).ToArray();
 
@@ -1199,7 +1216,15 @@ namespace LibGit2Sharp.Core
                                               ref mergeOptions,
                                               ref checkoutOptions);
 
-            Ensure.ZeroResult(res);
+            if (res == (int)GitErrorCode.MergeConflict)
+            {
+                earlyStop = true;
+            }
+            else
+            {
+                earlyStop = false;
+                Ensure.ZeroResult(res);
+            }
         }
 
         public static void git_merge_analysis(
@@ -3323,6 +3348,15 @@ namespace LibGit2Sharp.Core
             }
 
             Ensure.ZeroResult(res);
+        }
+
+        #endregion
+
+        #region git_transport_smart_
+
+        public static int git_transport_smart_credentials(out IntPtr cred, IntPtr transport, string user, int methods)
+        {
+            return NativeMethods.git_transport_smart_credentials(out cred, transport, user, methods);
         }
 
         #endregion
