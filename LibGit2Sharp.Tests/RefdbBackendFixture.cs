@@ -318,7 +318,6 @@ namespace LibGit2Sharp.Tests
         [Fact]
         public void CanLockAndUnlockFromRefDbBackend()
         {
-
         }
 
         #region Shared transaction tests
@@ -459,7 +458,7 @@ namespace LibGit2Sharp.Tests
             }
         }
 
-        #endregion
+        #endregion Shared transaction tests
 
         #region MockRefdbBackend
 
@@ -589,7 +588,7 @@ namespace LibGit2Sharp.Tests
             public override bool Lookup(string referenceName, out bool isSymbolic, out ObjectId oid, out string symbolic)
             {
                 MockRefdbReference reference;
-                
+
                 if (!references.TryGetValue(referenceName, out reference))
                 {
                     isSymbolic = false;
@@ -620,7 +619,6 @@ namespace LibGit2Sharp.Tests
             {
                 if (references.ContainsKey(referenceName))
                 {
-
                     if (references.ContainsKey(newReferenceName) && !force)
                     {
                         throw new NameConflictException("error");
@@ -678,7 +676,6 @@ namespace LibGit2Sharp.Tests
 
             public override void EnsureReflog(string refName)
             {
-                
             }
 
             public override void ReadReflog()
@@ -714,7 +711,7 @@ namespace LibGit2Sharp.Tests
                 reference.IsLocked = true;
             }
 
-            public override void UnlockReference(string refName)
+            public override void UnlockReference(string refName, RefdbBackendUnlockType type)
             {
                 MockRefdbReference reference;
 
@@ -724,14 +721,19 @@ namespace LibGit2Sharp.Tests
                         string.Format("Reference {0} was not found.", refName));
                 }
 
+                if (type == RefdbBackendUnlockType.UnlockAndDelete)
+                {
+                    references.Remove(refName);
+                }
+
                 reference.IsLocked = false;
             }
         }
 
         private class MockRefDbIterator : RefdbIterator
         {
-            IDictionary<string, MockRefdbReference> references;
-            IEnumerator<KeyValuePair<string, MockRefdbReference>> nextIterator;
+            private IDictionary<string, MockRefdbReference> references;
+            private IEnumerator<KeyValuePair<string, MockRefdbReference>> nextIterator;
 
             public MockRefDbIterator(IDictionary<string, MockRefdbReference> allRefs, string glob)
             {
@@ -781,7 +783,7 @@ namespace LibGit2Sharp.Tests
             }
         }
 
-        #endregion
+        #endregion MockRefdbBackend
 
         private static MockRefdbBackend SetupBackend(Repository repository)
         {
