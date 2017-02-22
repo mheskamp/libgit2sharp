@@ -37,6 +37,25 @@ namespace LibGit2Sharp
         private readonly SubmoduleCollection submodules;
         private readonly Lazy<PathCase> pathCase;
 
+        [Flags]
+        private enum RepositoryRequiredParameter
+        {
+            None = 0,
+            Path = 1,
+            Options = 2,
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Repository"/> class
+        /// that does not point to an on-disk Git repository.  This is
+        /// suitable only for custom, in-memory Git repositories that are
+        /// configured with custom object database, reference database and/or
+        /// configuration backends.
+        /// </summary>
+        public Repository()
+            : this(null, null, RepositoryRequiredParameter.None)
+        { }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Repository"/> class.
         /// <para>For a standard repository, <paramref name="path"/> should either point to the ".git" folder or to the working directory. For a bare repository, <paramref name="path"/> should directly point to the repository folder.</para>
@@ -45,7 +64,8 @@ namespace LibGit2Sharp
         /// The path to the git repository to open, can be either the path to the git directory (for non-bare repositories this
         /// would be the ".git" folder inside the working directory) or the path to the working directory.
         /// </param>
-        public Repository(string path) : this(path, null)
+        public Repository(string path)
+            : this(path, null, RepositoryRequiredParameter.Path)
         { }
 
         /// <summary>
@@ -60,12 +80,24 @@ namespace LibGit2Sharp
         /// Overrides to the way a repository is opened.
         /// </param>
         public Repository(string path, RepositoryOptions options)
+            : this(path, options, RepositoryRequiredParameter.Path | RepositoryRequiredParameter.Options)
+        { }
+
+        private Repository(string path, RepositoryOptions options, RepositoryRequiredParameter requiredParameter)
         {
-            Ensure.ArgumentNotNullOrEmptyString(path, "path");
+            if ((requiredParameter & RepositoryRequiredParameter.Path) == RepositoryRequiredParameter.Path)
+            {
+                Ensure.ArgumentNotNullOrEmptyString(path, "path");
+            }
+
+            if ((requiredParameter & RepositoryRequiredParameter.Options) == RepositoryRequiredParameter.Options)
+            {
+                Ensure.ArgumentNotNull(options, "options");
+            }
 
             try
             {
-                handle = Proxy.git_repository_open(path);
+                handle = (path != null) ? Proxy.git_repository_open(path) : Proxy.git_repository_new();
                 RegisterForCleanup(handle);
 
                 isBare = Proxy.git_repository_is_bare(handle);
@@ -382,7 +414,7 @@ namespace LibGit2Sharp
             CleanupDisposableDependencies();
         }
 
-        #endregion
+        #endregion IDisposable Members
 
         /// <summary>
         /// Initialize a repository at the specified <paramref name="path"/>.
@@ -965,7 +997,6 @@ namespace LibGit2Sharp
             IList<string> paths,
             IConvertableToGitCheckoutOpts opts)
         {
-
             using (GitCheckoutOptsWrapper checkoutOptionsWrapper = new GitCheckoutOptsWrapper(opts, ToFilePaths(paths)))
             {
                 var options = checkoutOptionsWrapper.Options;
@@ -1081,7 +1112,7 @@ namespace LibGit2Sharp
 
                 if (treesame && !amendMergeCommit)
                 {
-                    throw (options.AmendPreviousCommit ? 
+                    throw (options.AmendPreviousCommit ?
                         new EmptyCommitException("Amending this commit would produce a commit that is identical to its parent (id = {0})", parents[0].Id) :
                         new EmptyCommitException("No changes; nothing to commit."));
                 }
@@ -1272,7 +1303,7 @@ namespace LibGit2Sharp
             if (fetchHeads.Length == 0)
             {
                 var expectedRef = this.Head.UpstreamBranchCanonicalName;
-                throw new MergeFetchHeadNotFoundException("The current branch is configured to merge with the reference '{0}' from the remote, but this reference was not fetched.", 
+                throw new MergeFetchHeadNotFoundException("The current branch is configured to merge with the reference '{0}' from the remote, but this reference was not fetched.",
                     expectedRef);
             }
 
@@ -1454,10 +1485,13 @@ namespace LibGit2Sharp
             {
                 case GitMergePreference.GIT_MERGE_PREFERENCE_NONE:
                     return FastForwardStrategy.Default;
+
                 case GitMergePreference.GIT_MERGE_PREFERENCE_FASTFORWARD_ONLY:
                     return FastForwardStrategy.FastForwardOnly;
+
                 case GitMergePreference.GIT_MERGE_PREFERENCE_NO_FASTFORWARD:
                     return FastForwardStrategy.NoFastForward;
+
                 default:
                     throw new InvalidOperationException(String.Format("Unknown merge preference: {0}", preference));
             }
@@ -1505,6 +1539,7 @@ namespace LibGit2Sharp
                         mergeResult = NormalMerge(annotatedCommits, merger, options);
                     }
                     break;
+
                 case FastForwardStrategy.FastForwardOnly:
                     if (mergeAnalysis.HasFlag(GitMergeAnalysis.GIT_MERGE_ANALYSIS_FASTFORWARD))
                     {
@@ -1523,12 +1558,14 @@ namespace LibGit2Sharp
                         throw new NonFastForwardException("Cannot perform fast-forward merge.");
                     }
                     break;
+
                 case FastForwardStrategy.NoFastForward:
                     if (mergeAnalysis.HasFlag(GitMergeAnalysis.GIT_MERGE_ANALYSIS_NORMAL))
                     {
                         mergeResult = NormalMerge(annotatedCommits, merger, options);
                     }
                     break;
+
                 default:
                     throw new NotImplementedException(
                         string.Format(CultureInfo.InvariantCulture, "Unknown fast forward strategy: {0}", mergeAnalysis));
